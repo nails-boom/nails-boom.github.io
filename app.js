@@ -104,8 +104,8 @@
     if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1));
   });
 
-  /* --- музика: YouTube завантажується лише після натискання (до того жодних запитів до YouTube) --- */
-  var VIDEO_ID = "OoqVcoAYOPM";
+  /* --- музика: SoundCloud завантажується лише після натискання (до того жодних запитів до SoundCloud) --- */
+  var TRACK = "https://soundcloud.com/onlybangs/tebra-slow";
   var player = $("#player"), pBtn = $("#player-btn"), pBox = $("#player-box"), pFrame = $("#player-frame");
   pBtn.addEventListener("click", function () {
     var open = pBox.hidden;
@@ -113,9 +113,10 @@
     pBtn.setAttribute("aria-expanded", String(open));
     if (open && !pFrame.firstChild) {
       var f = doc.createElement("iframe");
-      f.src = "https://www.youtube-nocookie.com/embed/" + VIDEO_ID + "?autoplay=1&loop=1&playlist=" + VIDEO_ID + "&rel=0&modestbranding=1&playsinline=1";
+      f.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(TRACK) +
+        "&auto_play=true&color=%23d9527f&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false";
       f.title = "Музика";
-      f.allow = "autoplay; encrypted-media; picture-in-picture";
+      f.allow = "autoplay; encrypted-media";
       f.referrerPolicy = "strict-origin-when-cross-origin";
       f.loading = "eager";
       pFrame.appendChild(f);
