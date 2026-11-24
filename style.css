@@ -242,3 +242,6 @@ h3{font-size:1.5rem}
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .js .reveal{opacity:1;transform:none}
 }
+.review-cta{text-align:center;margin-top:32px}
+.review-cta .small{max-width:32em;margin:12px auto 0}
+.about-art .arch img{object-position:50% 20%}

@@ -117,7 +117,6 @@
       f.title = "Музика";
       f.allow = "autoplay; encrypted-media; picture-in-picture";
       f.referrerPolicy = "strict-origin-when-cross-origin";
-      f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation allow-popups");
       f.loading = "eager";
       pFrame.appendChild(f);
       player.classList.add("playing");
