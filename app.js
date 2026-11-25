@@ -159,20 +159,64 @@
     if (!days.length) $("#slots-empty").hidden = false;
   }).catch(function () { $("#slots-empty").hidden = false; });
 
-  getJSON("vidhuky.json").then(function (list) {
-    list = Array.isArray(list) ? list.filter(function (r) { return r && r.tekst; }) : [];
+  /* --- відгуки: автоматично з опублікованої Google Таблиці (відповіді форми) + ручні з vidhuky.json --- */
+  var REVIEWS_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRutViQqxZ3dhREfotMIU5FrwUl4xkqIHoC4j-TYxS6sxQDRp1qOjXs0Vj7AccESlLukXnFYKsiGs0U/pub?output=csv";
+  function parseCSV(text) {
+    var rows = [], row = [], f = "", q = false, i, c;
+    for (i = 0; i < text.length; i++) {
+      c = text.charAt(i);
+      if (q) {
+        if (c === '"') { if (text.charAt(i + 1) === '"') { f += '"'; i++; } else q = false; }
+        else f += c;
+      } else if (c === '"') q = true;
+      else if (c === ",") { row.push(f); f = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text.charAt(i + 1) === "\n") i++;
+        row.push(f); rows.push(row); row = []; f = "";
+      } else f += c;
+    }
+    if (f || row.length) { row.push(f); rows.push(row); }
+    return rows;
+  }
+  function clean(t, max) {
+    t = String(t || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+    /* у кириличному тексті латинська i -> українська і */
+    if (/[Ѐ-ӿ]/.test(t) && !/[a-hj-z]/i.test(t)) t = t.replace(/i/g, "і").replace(/I/g, "І");
+    return t.length > max ? t.slice(0, max - 1) + "…" : t;
+  }
+  function looksSpam(t) { return /(https?:|www\.|\.(com|ru|net|org|io|xyz|ua)\b|t\.me|@\w)/i.test(t); }
+  function fromSheet() {
+    return fetch(REVIEWS_CSV, { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (txt) {
+        return parseCSV(txt).slice(1).map(function (c) {
+          return { posluga: clean(c[1], 40), imya: clean(c[2], 40), tekst: clean(c[3], 600) };
+        }).filter(function (r) { return r.tekst.length >= 3 && !looksSpam(r.tekst + " " + r.imya); }).reverse();
+      });
+  }
+  function fromFile() {
+    return getJSON("vidhuky.json").then(function (l) { return Array.isArray(l) ? l : []; }).catch(function () { return []; });
+  }
+  Promise.all([fromSheet().catch(function () { return []; }), fromFile()]).then(function (res) {
+    var seen = {}, list = [];
+    res[0].concat(res[1]).forEach(function (r) {
+      if (!r || !r.tekst) return;
+      var k = clean(r.tekst, 600).toLowerCase();
+      if (seen[k]) return;
+      seen[k] = 1; list.push(r);
+    });
     var box = $("#reviews-list");
     list.slice(0, 30).forEach(function (r) {
       var card = el("figure", "review reveal");
-      var n = Math.max(0, Math.min(5, parseInt(r.zirky, 10) || 5));
-      card.appendChild(el("div", "stars", "★★★★★".slice(0, n)));
-      card.appendChild(el("p", null, r.tekst));
-      var f = el("footer", null, r.imya || "Клієнтка");
-      if (r.posluga) f.appendChild(el("small", null, r.posluga));
+      var n = Math.max(0, Math.min(5, parseInt(r.zirky, 10) || 0));
+      if (n) card.appendChild(el("div", "stars", "★★★★★".slice(0, n)));
+      card.appendChild(el("p", null, clean(r.tekst, 600)));
+      var f = el("footer", null, clean(r.imya, 40) || "Клієнтка");
+      if (r.posluga) f.appendChild(el("small", null, clean(r.posluga, 40)));
       card.appendChild(f);
       box.appendChild(card);
     });
     observeReveal($$(".review", box));
     if (!list.length) $("#reviews-empty").hidden = false;
-  }).catch(function () { $("#reviews-empty").hidden = false; });
+  });
 })();
